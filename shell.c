@@ -10,7 +10,7 @@
 
 #define v "bgeorgeSHv1"
 #define PATH "PATH"
-#define SIZE 20
+#define SIZE 30
 
 void handler(int sig) {
   while (waitpid(-1, NULL, 0) > 0) {}
@@ -39,27 +39,22 @@ void runAtPath(char *path_with_executable){
   char *argv_list[SIZE];
   char **ptr_argv = argv_list;
   char *paths[SIZE];
-  char *pathEnv = malloc(sizeof(char)*100);
+  char *pathEnv = malloc(strlen(getenv(PATH))+1);
   strcpy(pathEnv, getenv(PATH));
 
   int idx = 0;
-  char *curStr = malloc(sizeof(char)*100);
-  curStr = strtok(pathEnv, ":");
+  char *curStr;
 
   // adding the dot to the beginning of the paths
   paths[idx] = ".\0";
-  idx++;
 
+  curStr = strtok(pathEnv, ":");
   while (curStr != NULL) {
+    idx++;
     paths[idx] = curStr;
     curStr = strtok(NULL, ":");
-    if (curStr != NULL) {
-      idx++;
-    }
   }
 
-
-  free(curStr);
   free(pathEnv);
 
   createArgvList(path_with_executable, ptr_argv, " ");
@@ -99,17 +94,19 @@ void redirection(int charToFind, char *stringToSearch, char *path) {
   char *output_char = strchr( stringToSearch, charToFind);
   if (output_char != NULL) {
     char *tmp = strchr(output_char, ' ') +1;
-    char here[100];
+    char here[300];
     strcpy(here, path);
     strcat(here, "/");
     strcat(here, tmp);
+    // printf("%s\n", here);
 
     if (charToFind == '>') {
       close(1);
+      open(here, O_CREAT|O_RDWR);
     } else if (charToFind == '<') {
       close(0);
+      open(here, O_RDWR);
     }
-    open(here, O_CREAT|O_RDWR);
   }
 }
 
@@ -162,7 +159,7 @@ int main(int argc, char **argv, char **envp) {
         removeSpecialChars('<', command);
 
         runAtPath(command);
-        printf("%s\n", strerror(errno));
+        printf("Error: %s\n", strerror(errno));
         exit(0);
       } else if(pid > 0){
         if (strchr(untouched_command, '&') == NULL) {
